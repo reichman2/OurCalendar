@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(200).json({ events });
     } else if (req.method === "POST") {
         // 2. Build the event
-        const newEvent = {
+        let newEvent = {
             title: req.body['title'],
             description: req.body['description'],
             date: new Date(req.body['date']),
@@ -57,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // 3. Add it to the db.
         try {
-            await prisma.event.create({
+            newEvent = await prisma.event.create({
                 data: newEvent
             })
         } catch (err) {
@@ -85,7 +85,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(501).json({ message: "501 Not Implemented" });
     } else if (req.method === "DELETE") {
         // TODO to DELETE an existing event in the db.
-        res.status(501).json({ message: "501 Not Implemented" });
+        const id = req.body['id'];
+        let event;
+
+        try {
+            event = await prisma.event.delete({
+                where: {
+                    id
+                }
+            });
+        } catch {
+            console.error("An error occured while deleting an Event.");
+            res.status(500).json({ message: "An error occurred!" });
+        }
+
+        res.status(200).json({ deleted: event });
     } else {
         res.status(405).json({ message: "405 Method not Allowed" });
     }
