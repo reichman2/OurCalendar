@@ -15,5 +15,12 @@ datasource db {
 
 
 model Calendar {
-    id      String @default(cuid()) @id
+    id                  String @default(cuid()) @id
+}
+
+model User {
+    id                  String @default(cuid()) @id
+    username            String @unique
+    password            String
+    registrationDate    DateTime @default(now())
 }
