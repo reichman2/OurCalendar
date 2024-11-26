@@ -33,7 +33,7 @@ model Event {
     date                DateTime
     title               String
     description         String?
-    color               String
+    color               String?
 
     author              User @relation(fields: [authorId], references: [id])
     authorId            Int
