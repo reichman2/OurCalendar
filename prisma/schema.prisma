@@ -15,12 +15,29 @@ datasource db {
 
 
 model Calendar {
-    id                  String @default(cuid()) @id
+    id                  Int @default(autoincrement()) @id
+    events              Event[]
 }
 
 model User {
-    id                  String @default(cuid()) @id
+    id                  Int @default(autoincrement()) @id
     username            String @unique
     password            String
     registrationDate    DateTime @default(now())
+
+    events              Event[]
+}
+
+model Event {
+    id                  String @default(cuid()) @id
+    date                DateTime
+    title               String
+    description         String?
+    color               String
+
+    author              User @relation(fields: [authorId], references: [id])
+    authorId            Int
+
+    calendar            Calendar @relation(fields: [calendarId], references: [id])
+    calendarId          Int
 }
