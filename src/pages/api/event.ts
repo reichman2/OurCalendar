@@ -2,17 +2,48 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../lib/prisma';
 import { Prisma } from '@prisma/client';
 
-type ResponseData = {
-    message?: string;
-    err?: object;
-    event?: object;
-};
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     // 1. Check the user's auth (or do in middleware)
     const user = 1; // || req.cookies['session'];
-    
-    if (req.method === "POST") {
+
+    if (req.method === "GET") {
+        let events;
+
+        if (req.body['startDate']) {
+            const startDate = new Date(req.body['startDate']);
+            const endDate = new Date((req.body['endDate'] || new Date()));
+
+            try {
+                events = await prisma.event.findMany({
+                    where: {
+                        date: {
+                            lte: endDate,
+                            gte: startDate
+                        }
+                    }
+                });
+            } catch {
+                console.error("An error occurred while fetching Event rows.");
+                res.status(500).json({ message: "An error occurred!" });
+            }
+        } else if (req.body['id']) {
+            const id = req.body['id'];
+
+            try {
+                events = await prisma.event.findFirst({
+                    where: {
+                        id: { equals: id }
+                    }
+                });
+            } catch {
+                console.error("An error occurred while fetching the Event.");
+                res.status(500).json({ message: "An error occurred!" });
+            }
+        }
+        
+        res.status(200).json({ events });
+    } else if (req.method === "POST") {
         // 2. Build the event
         const newEvent = {
             title: req.body['title'],
