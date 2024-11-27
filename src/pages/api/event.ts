@@ -3,6 +3,29 @@ import prisma from '../../lib/prisma';
 import { Prisma } from '@prisma/client';
 
 
+type EventType = {
+    id: string;
+    date: Date | string;
+    title: string;
+    description?: string;
+    color?: string;
+
+    authorId?: number;
+    calendarId?: number;
+};
+
+type EventModifyType = {
+    id?: string;
+    date?: Date | string;
+    title?: string;
+    description?: string;
+    color?: string;
+
+    authorId?: number;
+    calendarId?: number;
+};
+
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     // 1. Check the user's auth (or do in middleware)
     const user = 1; // || req.cookies['session'];
@@ -82,7 +105,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(200).json({ event: newEvent, message: "Success!" })
     } else if (req.method === "PATCH") {
         // TODO to MODIFY an existing event in the db.
-        res.status(501).json({ message: "501 Not Implemented" });
+        const id = req.body['id'];
+        let validated;
+
+        try {
+            validated = validateEventValues({
+                date: req.body['date'],
+                title: req.body['title'],
+                description: req.body['description'],
+                color: req.body['color']
+            });
+        } catch (err) {
+            let errMsg;
+            if (err instanceof Error) {
+                errMsg = err.message;
+            }
+                
+            res.status(400).json({ message: errMsg ?? "An error relating to the validity of your request has occurrd.  Please try again." });
+            return;
+        }
+
+        let event;       
+        try {
+            event = await prisma.event.update({
+                where: { id },
+                data: validated
+            });
+        } catch (err) {
+            console.log("An error occurred while updating an event.");
+
+            if (err instanceof Error) {
+                console.log(err.stack);
+            }
+
+            res.status(500).json({ message: "An error occurred!" });
+        }
+        
+        res.status(200).json({ event });
     } else if (req.method === "DELETE") {
         // TODO to DELETE an existing event in the db.
         const id = req.body['id'];
@@ -106,6 +165,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 
 }
+
+
+function validateEventValues(obj: EventModifyType) {
+    const values: EventModifyType = {};
+
+    if (obj.color && (typeof obj.color == "string") && obj.color.length == 6) {
+        values.color = obj.color;
+    }
+    
+    if (obj.date) {
+        const newDate = new Date(obj.date);
+
+        if (Number.isNaN(newDate.getTime())) {
+            throw new Error("Invalid Date");
+        }
+
+        values.date = newDate;
+    }
+
+    if (obj.title) {
+        if (obj.title.length >= 3 && obj.title.length <= 50) {
+            values.title = obj.title;
+        } else {
+            throw new Error("Invalid Title Length");
+        }
+    }
+
+    if (obj.description) {
+        if (obj.description.length <= 750) {
+            values.description = obj.description;
+        } else {
+            throw new Error("Invalid Description Length");
+        }
+    }
+
+    return values;
+}
+
 
 export const config = {
     api: {

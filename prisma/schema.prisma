@@ -32,7 +32,7 @@ model Event {
     id                  String @default(cuid()) @id
     date                DateTime
     title               String
-    description         String?
+    description         String? @db.VarChar(750)
     color               String?
 
     author              User @relation(fields: [authorId], references: [id])
