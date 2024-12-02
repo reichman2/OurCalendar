@@ -21,7 +21,7 @@ model Calendar {
 
 model User {
     id                  Int @default(autoincrement()) @id
-    username            String @unique
+    username            String @unique @db.VarChar(32)
     password            String
     registrationDate    DateTime @default(now())
 
